@@ -1301,6 +1301,13 @@ static const SignallingFlags s_flags_nfci[] = {
     { 0, 0, 0 }
 };
 
+// Suspend Resume Indicators (Q.763 3.52)
+static const SignallingFlags s_flags_susresind[] = {
+    { 0x01, 0x00, "isdn-subscriber-initiated" },
+    { 0x01, 0x01, "network-initiated" },
+    { 0, 0, 0 }
+};
+
 // Calling Party Category (Q.763 3.11)
 static const TokenDict s_dict_callerCat[] = {
     { "unknown",     0 },                // calling party's category is unknown
@@ -1328,13 +1335,6 @@ static const TokenDict s_dict_mediumReq[] = {
     { "1536kbit",        9 },
     { "1920kbit",       10 },
     { 0, 0 }
-};
-
-// Suspend Resume Indicators (Q.763 3.52)
-static const SignallingFlags s_flags_susresind[] = {
-    { 0x01, 0x00, "isdn-subscriber-initiated" },
-    { 0x01, 0x01, "network-initiated" },
-    { 0, 0, 0 }
 };
 
 // Generic Notification Indicator (Q.763 3.25)
