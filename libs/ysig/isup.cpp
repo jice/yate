@@ -2254,7 +2254,8 @@ SS7ISUPCall::SS7ISUPCall(SS7ISUP* controller, SignallingCircuit* cic,
                                          // Releasing: Q.764: T1: 15..60 seconds
     m_sgmRecvTimer(ISUP_T34_DEFVAL),     // Q.764: T34 - 2..4 seconds
     m_contTimer(ISUP_T27_DEFVAL),        // Q.764: T27 - 4 minutes
-    m_anmTimer(0)                        // Q.764 T9 Q.118: 1.5 - 3 minutes, not always used
+    m_anmTimer(0),                        // Q.764 T9 Q.118: 1.5 - 3 minutes, not always used
+    m_susTimer(2500)
 {
     if (!(controller && m_circuit)) {
 	Debug(isup(),DebugWarn,
@@ -2268,6 +2269,8 @@ SS7ISUPCall::SS7ISUPCall(SS7ISUP* controller, SignallingCircuit* cic,
 	m_iamTimer.interval(isup()->m_t7Interval);
     if (isup()->m_t9Interval)
 	m_anmTimer.interval(isup()->m_t9Interval);
+    if (isup()->m_t6Interval)
+  m_susTimer.interval(isup()->m_t6Interval);
     if (isup()->m_t27Interval)
 	m_contTimer.interval(isup()->m_t27Interval);
     if (isup()->m_t34Interval)
@@ -2420,10 +2423,14 @@ SignallingEvent* SS7ISUPCall::getEvent(const Time& when)
 		    DDebug(isup(),DebugInfo,"Call(%u). Received late 'SGM' [%p]",id(),this);
 		    break;
 		case SS7MsgISUP::SUS:
-		    m_lastEvent = new SignallingEvent(SignallingEvent::Suspend,msg,this);
+        if (m_susTimer.interval() && !m_susTimer.started())
+      m_susTimer.start();
+        m_lastEvent = new SignallingEvent(SignallingEvent::Suspend,msg,this);
 		    break;
 		case SS7MsgISUP::RES:
-		    m_lastEvent = new SignallingEvent(SignallingEvent::Resume,msg,this);
+        if (m_susTimer.started())
+      m_susTimer.stop();
+        m_lastEvent = new SignallingEvent(SignallingEvent::Resume,msg,this);
 		    break;
 		case SS7MsgISUP::APM:
 		    m_lastEvent = new SignallingEvent(SignallingEvent::Generic,msg,this);
@@ -2474,6 +2481,11 @@ SignallingEvent* SS7ISUPCall::getEvent(const Time& when)
 		if (outgoing() && m_anmTimer.started() && m_state >= Accepted &&
 		    m_state < Answered && timeout(isup(),this,m_anmTimer,when,"T9")) {
 		    setReason("noresponse",0,0,isup()->location());
+		    m_lastEvent = release();
+		} // JICE
+    if (m_susTimer.started() && m_state == Answered &&
+        timeout(isup(),this,m_susTimer,when,"T6")) {
+		    setReason("normal",0,0,isup()->location());
 		    m_lastEvent = release();
 		}
 	}

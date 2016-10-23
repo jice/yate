@@ -8812,6 +8812,7 @@ private:
     SignallingTimer m_sgmRecvTimer;      // Receive segmented message
     SignallingTimer m_contTimer;         // Continuity timer
     SignallingTimer m_anmTimer;          // T9 ACM -> ANM timer
+    SignallingTimer m_susTimer;          // T6 SUS -> RES timer
 };
 
 /**
@@ -9218,6 +9219,7 @@ private:
     ChargeProcess m_chargeProcessType;   // Indicates the way that charge message should be processed
     u_int64_t m_t1Interval;              // Q.764 T1 timer interval
     u_int64_t m_t5Interval;              // Q.764 T5 timer interval
+    u_int64_t m_t6Interval;              // Q.764 T5 timer interval
     u_int64_t m_t7Interval;              // Q.764 T7 timer interval
     u_int64_t m_t9Interval;              // Q.764 T9 AMM/CON recv timer interval
     u_int64_t m_t12Interval;             // Q.764 T12 BLK timer interval
