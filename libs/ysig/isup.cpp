@@ -1330,10 +1330,10 @@ static const TokenDict s_dict_mediumReq[] = {
     { 0, 0 }
 };
 
-// Access Delivery Information (Q.763 3.2)
+// Suspend Resume Indicators (Q.763 3.52)
 static const SignallingFlags s_flags_susresind[] = {
-    { 0x01, 0x00, "isdn-subscriber-initiated" },   // A Setup message was generated
-    { 0x01, 0x01, "network-initiated" },          // No Setup message generated
+    { 0x01, 0x00, "isdn-subscriber-initiated" },
+    { 0x01, 0x01, "network-initiated" },
     { 0, 0, 0 }
 };
 
