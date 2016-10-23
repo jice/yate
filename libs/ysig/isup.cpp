@@ -1330,6 +1330,13 @@ static const TokenDict s_dict_mediumReq[] = {
     { 0, 0 }
 };
 
+// Access Delivery Information (Q.763 3.2)
+static const SignallingFlags s_flags_susresind[] = {
+    { 0x01, 0x00, "isdn-subscriber-initiated" },   // A Setup message was generated
+    { 0x01, 0x01, "network-initiated" },          // No Setup message generated
+    { 0, 0, 0 }
+};
+
 // Generic Notification Indicator (Q.763 3.25)
 static const TokenDict s_dict_notifications[] = {
     { "user-suspended",         0x00 },
@@ -1435,7 +1442,7 @@ static const IsupParam s_paramDefs[] = {
     MAKE_PARAM(ServiceActivation,              0,0,             0,             0),                    // 3.49
     MAKE_PARAM(SignallingPointCode,            0,0,             0,             0),                    // 3.50
     MAKE_PARAM(SubsequentNumber,               0,decodeSubseq,  encodeSubseq,  0),                    // 3.51
-    MAKE_PARAM(SuspendResumeIndicators,        1,0,             0,             0),                    // 3.52
+    MAKE_PARAM(SuspendResumeIndicators,        1,decodeFlags,   encodeFlags,   s_flags_susresind),    // 3.52
     MAKE_PARAM(TransitNetworkSelection,        0,0,             0,             0),                    // 3.53
     MAKE_PARAM(TransmissionMediumRequirement,  1,decodeInt,     encodeInt,     s_dict_mediumReq),     // 3.54
     MAKE_PARAM(TransMediumRequirementPrime,    1,decodeInt,     encodeInt,     s_dict_mediumReq),     // 3.55
@@ -2641,6 +2648,7 @@ bool SS7ISUPCall::sendEvent(SignallingEvent* event)
 		result = true;
 		break;
 	    }
+      break;
 	//case SignallingEvent::Message:
 	//case SignallingEvent::Transfer:
 	case SignallingEvent::Charge:
@@ -2786,8 +2794,8 @@ bool SS7ISUPCall::copyParamIAM(SS7MsgISUP* msg, bool outgoing, SignallingMessage
 	param(dest,src,"CallingPartyNumber.restrict","callerpres",isup()->m_numPresentation);
 	param(dest,src,"CallingPartyNumber.screened","callerscreening",isup()->m_numScreening);
 	param(dest,src,"CallingPartyNumber.complete","complete","true");
-	m_format = src.getValue(YSTRING("format"),isup()->format());
-	dest.setParam("UserServiceInformation",m_format);
+	//m_format = src.getValue(YSTRING("format"),isup()->format());
+	//dest.setParam("UserServiceInformation",m_format);
 	return true;
     }
     // Incoming call
