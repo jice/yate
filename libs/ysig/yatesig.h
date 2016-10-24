@@ -8812,7 +8812,7 @@ private:
     SignallingTimer m_sgmRecvTimer;      // Receive segmented message
     SignallingTimer m_contTimer;         // Continuity timer
     SignallingTimer m_anmTimer;          // T9 ACM -> ANM timer
-    SignallingTimer m_susTimer;          // T6 SUS -> RES timer
+    SignallingTimer m_susnetTimer;          // T6 SUS -> RES timer
 };
 
 /**

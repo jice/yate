@@ -2255,7 +2255,7 @@ SS7ISUPCall::SS7ISUPCall(SS7ISUP* controller, SignallingCircuit* cic,
     m_sgmRecvTimer(ISUP_T34_DEFVAL),     // Q.764: T34 - 2..4 seconds
     m_contTimer(ISUP_T27_DEFVAL),        // Q.764: T27 - 4 minutes
     m_anmTimer(0),                        // Q.764 T9 Q.118: 1.5 - 3 minutes, not always used
-    m_susTimer(2500)
+    m_susnetTimer(2500)
 {
     if (!(controller && m_circuit)) {
 	Debug(isup(),DebugWarn,
@@ -2270,7 +2270,7 @@ SS7ISUPCall::SS7ISUPCall(SS7ISUP* controller, SignallingCircuit* cic,
     if (isup()->m_t9Interval)
 	m_anmTimer.interval(isup()->m_t9Interval);
     if (isup()->m_t6Interval)
-  m_susTimer.interval(isup()->m_t6Interval);
+  m_susnetTimer.interval(isup()->m_t6Interval);
     if (isup()->m_t27Interval)
 	m_contTimer.interval(isup()->m_t27Interval);
     if (isup()->m_t34Interval)
@@ -2423,13 +2423,15 @@ SignallingEvent* SS7ISUPCall::getEvent(const Time& when)
 		    DDebug(isup(),DebugInfo,"Call(%u). Received late 'SGM' [%p]",id(),this);
 		    break;
 		case SS7MsgISUP::SUS:
-        if (m_susTimer.interval() && !m_susTimer.started())
-      m_susTimer.start();
+        if (m_susnetTimer.interval() && !m_susnetTimer.started()
+        && SignallingUtils::hasFlag(msg->params(),"SuspendResumeIndicators","network-initiated"))
+      m_susnetTimer.start();
         m_lastEvent = new SignallingEvent(SignallingEvent::Suspend,msg,this);
 		    break;
 		case SS7MsgISUP::RES:
-        if (m_susTimer.started())
-      m_susTimer.stop();
+        if (m_susnetTimer.started()
+        && SignallingUtils::hasFlag(msg->params(),"SuspendResumeIndicators","network-initiated"))
+      m_susnetTimer.stop();
         m_lastEvent = new SignallingEvent(SignallingEvent::Resume,msg,this);
 		    break;
 		case SS7MsgISUP::APM:
@@ -2483,9 +2485,9 @@ SignallingEvent* SS7ISUPCall::getEvent(const Time& when)
 		    setReason("noresponse",0,0,isup()->location());
 		    m_lastEvent = release();
 		} // JICE
-    if (m_susTimer.started() && m_state == Answered &&
-        timeout(isup(),this,m_susTimer,when,"T6")) {
-		    setReason("normal",0,0,isup()->location());
+    if (m_susnetTimer.started() && m_state == Answered &&
+        timeout(isup(),this,m_susnetTimer,when,"T6")) {
+		    setReason("normal-clearing",0);
 		    m_lastEvent = release();
 		}
 	}
@@ -2577,9 +2579,26 @@ bool SS7ISUPCall::sendEvent(SignallingEvent* event)
 		mylock.drop();
 		result = transmitMessage(m);
 	    }
+      else if (validMsgState(true,SS7MsgISUP::ACM)) {
+    SS7MsgISUP* m = new SS7MsgISUP(SS7MsgISUP::ACM,id());
+    bool inband = m_inbandAvailable;
+    if (event->message()) {
+		    copyUpper(m->params(),event->message()->params());
+		    m_inbandAvailable = m_inbandAvailable ||
+			event->message()->params().getBoolValue(YSTRING("earlymedia"));
+		    inband = event->message()->params().getBoolValue(YSTRING("send-inband"),m_inbandAvailable);
+		}
+    if (event->type() == SignallingEvent::Ringing)
+        SignallingUtils::appendFlag(m->params(),"BackwardCallIndicators","called-free");
+    if (inband && !outgoing())
+		    SignallingUtils::appendFlag(m->params(),"OptionalBackwardCallIndicators","inband");
+		m_state = Accepted;
+		mylock.drop();
+		result = transmitMessage(m);
+      }
 	    break;
 	case SignallingEvent::Accept:
-	    if (validMsgState(true,SS7MsgISUP::ACM)) {
+      if (validMsgState(true,SS7MsgISUP::ACM)) {
 		SS7MsgISUP* m = new SS7MsgISUP(SS7MsgISUP::ACM,id());
 		bool inband = m_inbandAvailable;
 		if (event->message()) {
@@ -2603,7 +2622,14 @@ bool SS7ISUPCall::sendEvent(SignallingEvent* event)
 		m_state = Answered;
 		mylock.drop();
 		result = transmitMessage(m);
-	    }
+      } else if (validMsgState(true,SS7MsgISUP::CON)) {
+    SS7MsgISUP* m = new SS7MsgISUP(SS7MsgISUP::CON,id());
+		if (event->message())
+		    copyUpper(m->params(),event->message()->params());
+		m_state = Answered;
+		mylock.drop();
+		result = transmitMessage(m);
+      }
 	    break;
 	case SignallingEvent::Release:
 	    if (validMsgState(true,SS7MsgISUP::REL)) {
