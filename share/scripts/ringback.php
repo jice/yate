@@ -32,7 +32,7 @@
 require_once("libyate.php");
 
 // A fixed format is needed as we can't know what the called will offer
-$mediafmt = "mulaw";
+$mediafmt = "alaw";
 
 Yate::Init();
 //Yate::Debug(true);
