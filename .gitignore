@@ -1,0 +1,15 @@
+*.o
+*.a
+*.so
+*.so.*
+*.yate
+*/*.yate
+*.orig
+*/*.orig
+*~
+.*.swp
+*.log
+*.out
+*.csv
+*.tsv
+
